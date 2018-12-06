@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from sklearn import preprocessing
 from sklearn.linear_model import LogisticRegression
 
@@ -45,10 +45,19 @@ tfv = TfidfVectorizer(min_df=3,  max_features=None,
             ngram_range=(1, 3), use_idf=1,smooth_idf=1,sublinear_tf=1,
             stop_words = 'english')
 
+#count vect feat engineeering
+ctv = CountVectorizer(analyzer='word', token_pattern=r'\w+'
+        ngram_range=(1,3), stop_words = 'english')
+
 # Fitting TF-IDF to both training and test sets (semi-supervised learning)
 tfv.fit(list(xtrain) + list(xtest))
 xtrain_tfv =  tfv.transform(xtrain) 
 xtest_tfv = tfv.transform(xtest)
+
+# Fitting CountVectorizer to both training and test set 
+ctv.fit(list(xtrain) + list(xtest))
+xtrain_ctv =  ctv.transform(xtrain) 
+xtest_ctv = ctv.transform(xtest)
 
 #logloss
 def multiclass_logloss(actual,predicted,eps=1e-15):
@@ -68,7 +77,20 @@ def multiclass_logloss(actual,predicted,eps=1e-15):
     vsota = np.sum(actual*np.log(clip))
     return -1.0 / rows * vsota
 
+# Training with logistic regression using tfidf as feature engineering
 clf = LogisticRegression(C=1.0)
 clf.fit(xtrain_tfv,ytrain)
+
+# fit the trained logreg with tfidf to test data
 predictions = clf.predict_proba(xtest_tfv)
-print("logloss: 0.3f " % multiclass_logloss(ytest,predictions))
+
+# Training with logistic regression using count as feature engineering
+clf1 = LogisticRegression(C=1.0)
+clf1.fit(xtrain_ctv,ytrain)
+
+# fit the trained logreg with count to test data
+predictions1 = clf.predict_proba(xtest_ctv)
+
+print("logloss of logreg with tfidf: %0.3f " % multiclass_logloss(ytest,predictions))
+print("logloss of logreg with count: %0.3f " % multiclass_logloss(ytest,predictions1))
+
