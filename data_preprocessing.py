@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 from sklearn import preprocessing
@@ -91,6 +92,19 @@ clf1.fit(xtrain_ctv,ytrain)
 # fit the trained logreg with count to test data
 predictions1 = clf1.predict_proba(xtest_ctv)
 
-print("logloss of logreg with tfidf: %0.3f " % multiclass_logloss(ytest,predictions))
-print("logloss of logreg with count: %0.3f " % multiclass_logloss(ytest,predictions1))
+# fitting simple xgboost on tfidf
+clf_xgb = xgb.XGBClassifier(max_depth=7,n_estimators=200, colsample_bytree=0.8,
+        subsample=0.7, nthread=10, learning_rate=0.1)
+clf_xgb.fit(xtrain_tfv.tocsc(),ytrain)
+predictions_xgb = clf_xgb.predict_proba(xtest_tfv.tocsc())
 
+# fitting simple xgboost on count
+clf_xgb1 = xgb.XGBClassifier(max_depth=7,n_estimators=200, colsample_bytree=0.8,
+        subsample=0.7, nthread=10, learning_rate=0.1)
+clf_xgb1.fit(xtrain_ctv.tocsc(),ytrain)
+predictions_xgb1 = clf_xgb1.predict_proba(xtest_ctv.tocsc())
+
+print("logloss of logreg on tfidf: %0.3f " % multiclass_logloss(ytest,predictions))
+print("logloss of logreg on count: %0.3f " % multiclass_logloss(ytest,predictions1))
+print("logloss of xgb on tfidf: %0.3f " % multiclass_logloss(ytest,predictions_xgb))
+print("logloss of xgb on count: %0.3f " % multiclass_logloss(ytest,predictions_xgb1))
